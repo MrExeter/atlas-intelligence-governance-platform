@@ -1,0 +1,47 @@
+# Build & infra files
+Dockerfile*
+docker-compose*
+Makefile
+project_structure.txt
+
+# Virtual environments
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.log
+
+# Env files
+.env
+.env.*
+
+# Temp files
+temp.*
+
+.dockerignore
+
+# Git
+.git
+.gitignore
+.github/
+
+# IDE
+.idea/
+.vscode/
+
+# Testing
+tests/
+.pytest_cache/
+test_*.py
+*.http
+
+# Dev-only folders
+examples/
+infra/
+docs/
+
+# Local DB
+*.db
+*.sqlite3

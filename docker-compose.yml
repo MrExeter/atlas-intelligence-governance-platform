@@ -1,0 +1,28 @@
+
+services:
+  atlas:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: atlas_local
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+
+    volumes:
+      - ${HOME}/.aws:/root/.aws:ro
+
+    environment:
+      ENV: development
+      RATE_LIMIT_PER_MINUTE: 10
+      AWS_REGION: us-west-1
+      DYNAMODB_TABLE_NAME: atlas_invite_tokens
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      TOKEN_HASH_SALT: ${TOKEN_HASH_SALT}
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
