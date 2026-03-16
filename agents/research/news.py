@@ -14,20 +14,58 @@ NEWS_SOURCES = [
 
 def fetch_news(query: str) -> List[SourceDocument]:
     """
-    Very simple placeholder fetcher.
-    Replace later with proper search APIs.
+    Fetches news articles from list of sources.
+    :param query: query or phrase to search news articles for.
+    :return: list of news articles.
     """
 
-    # For now: fake documents so pipeline works end-to-end
-    return [
-        {
-            "id": str(uuid4()),
-            "title": f"News about {query}",
-            "url": "https://example.com",
-            "content": f"Recent developments regarding {query}.",
-            "metadata": {"source": "mock"}
-        }
-    ]
+    documents: List[SourceDocument] = []
+
+    for url in NEWS_SOURCES:
+        try:
+            r = requests.get(url, timeout=5)
+
+            text = r.text[:2000]
+
+            # Fast checks first
+            if not text:
+                continue
+
+            if len(text) < 300:
+                continue
+
+            text_lower = text.lower()
+
+            # Garbage filter
+            if "<html" in text_lower:
+                continue
+
+            if "<!doctype" in text_lower:
+                continue
+
+            if "forbidden" in text_lower:
+                continue
+
+            # Keyword check (more expensive)
+            keywords = query.lower().split()
+
+            if not any(k in text_lower for k in keywords):
+                continue
+
+            documents.append(
+                {
+                    "id": str(uuid4()),
+                    "title": f"{url}",
+                    "url": url,
+                    "content": text,
+                    "metadata": {"source": "news"}
+                }
+            )
+
+        except Exception:
+            continue
+
+    return documents
 
 
 def news_node(state: AgentState) -> AgentState:

@@ -17,7 +17,7 @@ class GovernancePipeline:
 
     def __init__(self):
         self.claim_extractor = ClaimExtractor()
-        self.claim_verifier = ClaimVerifier()
+        self.claim_verifier = ClaimVerifier(similarity_threshold=0.53)
         self.evaluation_engine = EvaluationEngine()
         self.policy_engine = PolicyEngine()
         self.metrics_engine = ReliabilityMetrics()
@@ -28,7 +28,7 @@ class GovernancePipeline:
         claims = self.claim_extractor.extract_claims(trace.final_output)
 
         # 2. Prepare source texts (simple version: use URLs or summaries)
-        source_texts: List[str] = [s.url for s in trace.sources]
+        source_texts: List[str] = [s.content for s in trace.sources if s.content is not None]
 
         # 3. Verify claims against sources
         verified_claims = self.claim_verifier.verify_claims(claims, source_texts)
