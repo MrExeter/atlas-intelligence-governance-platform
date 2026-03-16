@@ -13,6 +13,7 @@ class Source(BaseModel):
     url: str
     domain: str
     title: Optional[str] = None
+    content: Optional[str] = None
 
 
 class ReasoningStep(BaseModel):

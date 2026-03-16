@@ -5,13 +5,10 @@ from sentence_transformers import SentenceTransformer, util
 
 
 class ClaimVerifier:
-    """
-    Verifies claims against retrieved sources.
-    """
 
-    def __init__(self):
-        # Load embedding model once when the verifier is created
+    def __init__(self, similarity_threshold: float = 0.45):
         self.model = SentenceTransformer("all-MiniLM-L6-v2")
+        self.similarity_threshold = similarity_threshold
 
 
     def verify_claims(self, claims: List[Claim], sources: List[str]) -> List[Claim]:
@@ -26,7 +23,7 @@ class ClaimVerifier:
 
             claim.supporting_sources = supporting_sources
             claim.support_score = max_similarity
-            claim.verified = max_similarity > 0.65
+            claim.verified = max_similarity > self.similarity_threshold
 
             verified_claims.append(claim)
 
@@ -55,7 +52,7 @@ class ClaimVerifier:
 
         max_similarity = similarities.max().item()
 
-        return max_similarity > 0.65
+        return max_similarity > self.similarity_threshold
 
     def _find_supporting_sources(self, claim_text: str, sources: List[str]) -> tuple[List[str], float]:
         """
@@ -86,7 +83,7 @@ class ClaimVerifier:
             if similarity > max_similarity:
                 max_similarity = similarity
 
-            if similarity > 0.65:
+            if similarity > self.similarity_threshold:
                 supporting_sources.append(sources[i])
 
         return supporting_sources, max_similarity

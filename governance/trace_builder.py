@@ -34,6 +34,7 @@ def build_execution_trace(result: dict, query: str) -> ExecutionTrace:
                 url=url,
                 domain=domain,
                 title=doc.get("title"),
+                content=doc.get("content"),
             )
         )
 
