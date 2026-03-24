@@ -65,6 +65,24 @@ def build_execution_trace(result: dict, query: str) -> ExecutionTrace:
     # Build Trace
     # ---------------------------
 
+    # Concatenate all report fields so the claim extractor sees the full output
+    text_parts = []
+
+    for field in ("executive_summary", "market_overview"):
+        value = result.get(field)
+        if value:
+            text_parts.append(value)
+
+    for competitor in result.get("competitors") or []:
+        if isinstance(competitor, dict) and competitor.get("summary"):
+            text_parts.append(competitor["summary"])
+
+    for item in (result.get("opportunities") or []) + (result.get("risks") or []):
+        if isinstance(item, str):
+            text_parts.append(item)
+
+    final_output = " ".join(text_parts)
+
     trace = ExecutionTrace(
         run_id=str(uuid.uuid4()),
         timestamp=datetime.now(UTC),
@@ -73,7 +91,7 @@ def build_execution_trace(result: dict, query: str) -> ExecutionTrace:
         retrieval_steps=retrieval_steps,
         sources=sources,
         reasoning_steps=[],
-        final_output=result.get("executive_summary", ""),
+        final_output=final_output,
         domains=domains,
         unique_domain_count=len(set(domains)),
     )

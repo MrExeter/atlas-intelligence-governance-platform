@@ -27,9 +27,9 @@ class EvaluationEngine:
             evidence_coverage = 0.0
             hallucination_rate = 0.0
         else:
-            avg_support = sum((c.support_score or 0.0) for c in claims) / total_claims
-            evidence_coverage = avg_support
-            hallucination_rate = 1 - avg_support
+            supported = sum(1 for c in claims if c.verified)
+            evidence_coverage = supported / total_claims
+            hallucination_rate = (total_claims - supported) / total_claims
 
         retrieval_depth = self._compute_retrieval_depth(sources, claims)
 

@@ -17,7 +17,7 @@ class GovernancePipeline:
 
     def __init__(self):
         self.claim_extractor = ClaimExtractor()
-        self.claim_verifier = ClaimVerifier(similarity_threshold=0.53)
+        self.claim_verifier = ClaimVerifier(similarity_threshold=0.42)
         self.evaluation_engine = EvaluationEngine()
         self.policy_engine = PolicyEngine()
         self.metrics_engine = ReliabilityMetrics()

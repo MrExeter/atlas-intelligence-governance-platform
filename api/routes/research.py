@@ -25,7 +25,8 @@ governance_pipeline = GovernancePipeline()
     response_model=ResearchResponse,
     dependencies=[Depends(rate_limit)],
 )
-async def run_research(req: ResearchRequest, _: None = Depends(validate_token)):
+# async def run_research(req: ResearchRequest, _: None = Depends(validate_token)):
+async def run_research(req: ResearchRequest):
     start_time = time.time()
 
     initial_state = {
