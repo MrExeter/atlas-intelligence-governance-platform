@@ -2,25 +2,24 @@ from typing import List
 
 from agents.state import AgentState, SourceDocument
 
+_MAX_RETRIEVED = 5
+
+
+def _relevance_score(doc: SourceDocument, topic: str) -> float:
+    keywords = set(topic.lower().split())
+    if not keywords:
+        return 0.0
+    text = (doc.get("title", "") + " " + doc.get("content", "")).lower()
+    matches = sum(1 for k in keywords if k in text)
+    return matches / len(keywords)
+
 
 def rag_node(state: AgentState) -> AgentState:
-    """
-    Temporary RAG node.
-
-    Later this becomes:
-    - chunking
-    - embeddings
-    - hybrid retrieval
-    - reranking
-
-    For now: pass through top documents.
-    """
-
     documents = state.get("raw_documents", [])
+    topic = state.get("topic", "")
 
-    # Simple relevance heuristic (placeholder)
-    retrieved: List[SourceDocument] = documents[:5]
+    valid = [d for d in documents if d.get("content", "").strip()]
 
-    return {
-        "retrieved_chunks": retrieved
-    }
+    scored = sorted(valid, key=lambda d: _relevance_score(d, topic), reverse=True)
+
+    return {"retrieved_chunks": scored[:_MAX_RETRIEVED]}
