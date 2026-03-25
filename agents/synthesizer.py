@@ -2,7 +2,7 @@ from langchain_openai import ChatOpenAI
 from agents.state import AgentState
 import json
 
-from governance.token_utils import update_token_usage
+from usage import get_tracker
 
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.3)
 
@@ -49,8 +49,13 @@ Generate executive brief.
         {"role": "user", "content": prompt}
     ])
 
-    # Add token usage and cost monitoring
-    usage_update = update_token_usage(state, response)
+    usage = response.response_metadata.get("token_usage", {})
+    get_tracker(state.get("run_id", "")).record_llm_call(
+        provider="openai",
+        model="gpt-4o-mini",
+        input_tokens=usage.get("prompt_tokens", 0),
+        output_tokens=usage.get("completion_tokens", 0),
+    )
 
     parsed = json.loads(response.content)
 
@@ -60,5 +65,4 @@ Generate executive brief.
         "competitors": parsed["competitors"],
         "opportunities": parsed["opportunities"],
         "risks": parsed["risks"],
-        **usage_update
     }

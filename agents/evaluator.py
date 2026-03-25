@@ -3,7 +3,7 @@ from agents.state import AgentState
 import json
 from datetime import datetime, UTC
 
-from governance.token_utils import update_token_usage
+from usage import get_tracker
 
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0)
 
@@ -53,12 +53,17 @@ Evaluate this report:
         {"role": "user", "content": prompt}
     ])
 
-    usage_update = update_token_usage(state, response)
+    usage = response.response_metadata.get("token_usage", {})
+    get_tracker(state.get("run_id", "")).record_llm_call(
+        provider="openai",
+        model="gpt-4o-mini",
+        input_tokens=usage.get("prompt_tokens", 0),
+        output_tokens=usage.get("completion_tokens", 0),
+    )
 
     scores = json.loads(response.content)
 
     return {
         "eval_scores": scores,
         "completed_at": datetime.now(UTC),
-        **usage_update
     }
