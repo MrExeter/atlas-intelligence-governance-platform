@@ -5,7 +5,7 @@ from uuid import uuid4
 from langchain_openai import ChatOpenAI
 from agents.state import AgentState, ResearchTask
 
-from governance.token_utils import update_token_usage
+from usage import get_tracker
 
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
 
@@ -43,8 +43,13 @@ Generate research tasks.
         {"role": "user", "content": prompt}
     ])
 
-    # Add token usage and cost monitoring
-    usage_update = update_token_usage(state, response)
+    usage = response.response_metadata.get("token_usage", {})
+    get_tracker(state.get("run_id", "")).record_llm_call(
+        provider="openai",
+        model="gpt-4o-mini",
+        input_tokens=usage.get("prompt_tokens", 0),
+        output_tokens=usage.get("completion_tokens", 0),
+    )
 
     raw = response.content.strip()
 
@@ -72,5 +77,4 @@ Generate research tasks.
     return {
         "tasks": tasks,
         "started_at": datetime.now(timezone.utc),
-        **usage_update
     }

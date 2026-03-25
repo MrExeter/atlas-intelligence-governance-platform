@@ -13,6 +13,10 @@ class RetrievalPipeline:
         self._registry = registry
         self._config = config
 
+    def providers_for(self, task_type: str) -> List[str]:
+        """Return the provider names configured for a task type."""
+        return list(self._config.provider_map.get(task_type, []))
+
     def fetch(self, query: str, task_type: str) -> List[SourceDocument]:
         provider_names = self._config.provider_map.get(task_type, [])
         raw_sources: List[RawSource] = []

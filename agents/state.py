@@ -26,6 +26,9 @@ class AgentMetrics(TypedDict):
 
 class AgentState(TypedDict, total=False):
 
+    # Run identity — used by usage tracker
+    run_id: str
+
     # Input
     topic: str
 
