@@ -49,6 +49,10 @@ async def validate_token(
             detail="Unauthorized",
         )
 
+    # Dev bypass: skip DynamoDB in local development
+    if os.getenv("ENV", "development") == "development":
+        return f"dev_{hash_token(token)}"
+
     token_hash = hash_token(token)
 
     response = table.get_item(Key={"token_hash": token_hash})
@@ -76,3 +80,5 @@ async def validate_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Unauthorized",
         )
+
+    return token_hash

@@ -11,6 +11,7 @@ services:
 
     volumes:
       - ${HOME}/.aws:/root/.aws:ro
+      - ./data:/app/data
 
     environment:
       ENV: development
