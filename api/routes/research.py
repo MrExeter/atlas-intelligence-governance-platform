@@ -11,6 +11,7 @@ from api.schemas.research import ResearchRequest, ResearchResponse
 from auth.token_validator import validate_token
 from governance.pipeline import GovernancePipeline
 from governance.trace_builder import build_execution_trace
+from history.factory import get_history_store
 from usage import create_tracker, finish_run
 
 logger = logging.getLogger("atlas")
@@ -19,6 +20,7 @@ router = APIRouter(prefix="/research", tags=["research"])
 
 graph = build_graph()
 governance_pipeline = GovernancePipeline()
+history_store = get_history_store()
 
 
 @router.post(
@@ -26,8 +28,7 @@ governance_pipeline = GovernancePipeline()
     response_model=ResearchResponse,
     dependencies=[Depends(rate_limit)],
 )
-async def run_research(req: ResearchRequest, _: None = Depends(validate_token)):
-# async def run_research(req: ResearchRequest):
+async def run_research(req: ResearchRequest, invite_token: str = Depends(validate_token)):
     run_id = str(uuid.uuid4())
     start_time = time.time()
 
@@ -50,6 +51,28 @@ async def run_research(req: ResearchRequest, _: None = Depends(validate_token)):
     # Finalise usage tracking
     usage_metrics = finish_run(run_id)
     latency_ms = int((time.time() - start_time) * 1000)
+
+    history_store.save_run({
+        "run_id": run_id,
+        "timestamp": datetime.now(UTC).isoformat(),
+        "topic": req.topic,
+        "invite_token": invite_token,
+        "status": "completed",
+        "governance": {
+            "overall_score": decision.overall_score,
+            "policy_verdict": decision.verdict,
+            **governance_metrics.model_dump(mode="json"),
+        },
+        "metrics": {
+            "tokens_used": usage_metrics.tokens_used,
+            "llm_cost_usd": usage_metrics.llm_cost_usd,
+            "api_cost_usd": usage_metrics.api_cost_usd,
+            "total_cost_usd": usage_metrics.total_cost_usd,
+            "latency_ms": latency_ms,
+            "providers_used": usage_metrics.providers_used,
+            "models_used": usage_metrics.models_used,
+        },
+    })
 
     logger.info(
         {
