@@ -38,6 +38,9 @@ class FileRunHistoryStore(RunHistoryStore):
         return None
 
     def list_runs(self, invite_token: str, limit: int = 20) -> list[dict]:
-        records = [r for r in self._load() if r.get("invite_token") == invite_token]
+        records = [
+            r for r in self._load()
+            if r.get("invite_token") == invite_token and r.get("status") == "completed"
+        ]
         records.sort(key=lambda r: r.get("timestamp", ""), reverse=True)
         return records[:limit]
