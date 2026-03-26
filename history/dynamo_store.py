@@ -34,6 +34,7 @@ class DynamoRunHistoryStore(RunHistoryStore):
     def list_runs(self, invite_token: str, limit: int = 20) -> list[dict]:
         response = self._table.query(
             KeyConditionExpression=Key("pk").eq(invite_token),
+            FilterExpression=boto3.dynamodb.conditions.Attr("status").eq("completed"),
             ScanIndexForward=False,  # newest first (descending SK)
             Limit=limit,
         )

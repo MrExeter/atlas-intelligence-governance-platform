@@ -72,6 +72,13 @@ async def run_research(req: ResearchRequest, invite_token: str = Depends(validat
             "providers_used": usage_metrics.providers_used,
             "models_used": usage_metrics.models_used,
         },
+        "result": {
+            "executive_summary": result.get("executive_summary"),
+            "market_overview": result.get("market_overview"),
+            "competitors": result.get("competitors"),
+            "opportunities": result.get("opportunities"),
+            "risks": result.get("risks"),
+        },
     })
 
     logger.info(

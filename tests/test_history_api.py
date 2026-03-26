@@ -32,6 +32,13 @@ SAMPLE_RUN = {
         "providers_used": ["tavily", "newsdata"],
         "models_used": ["openai:gpt-4o-mini"],
     },
+    "result": {
+        "executive_summary": "Test summary",
+        "market_overview": "Test overview",
+        "competitors": [{"name": "Acme", "summary": "Competitor"}],
+        "opportunities": ["Opportunity A"],
+        "risks": ["Risk A"],
+    },
 }
 
 
@@ -65,7 +72,18 @@ def test_list_runs_response_shape(client):
     assert "runs" in body
     assert "count" in body
     assert body["count"] == 1
-    assert body["runs"][0]["run_id"] == "test-run-123"
+    run = body["runs"][0]
+    assert run["run_id"] == "test-run-123"
+
+
+def test_list_runs_flattened_fields(client):
+    r = client.get("/history/runs")
+    run = r.json()["runs"][0]
+    assert run["governance_score"] == 0.73
+    assert run["governance_verdict"] == "WARN"
+    assert run["total_cost_usd"] == 0.0142
+    assert run["tokens_used"] == 5608
+    assert run["latency_ms"] == 28849
 
 
 def test_list_runs_passes_limit(client, mock_history_store):
@@ -79,6 +97,19 @@ def test_get_run_returns_200(client):
     assert r.json()["topic"] == "AI in drones"
 
 
+def test_get_run_includes_result(client):
+    r = client.get("/history/runs/test-run-123")
+    body = r.json()
+    assert "result" in body
+    assert body["result"]["executive_summary"] == "Test summary"
+
+
+def test_list_runs_excludes_result(client):
+    r = client.get("/history/runs")
+    run = r.json()["runs"][0]
+    assert "result" not in run
+
+
 def test_get_run_not_found(client, mock_history_store):
     mock_history_store.get_run.return_value = None
     r = client.get("/history/runs/nonexistent")
@@ -89,3 +120,13 @@ def test_list_runs_requires_auth(client):
     app.dependency_overrides.clear()
     r = client.get("/history/runs")
     assert r.status_code == 401
+
+
+def test_list_runs_excludes_non_completed(client, mock_history_store):
+    incomplete = {**SAMPLE_RUN, "run_id": "incomplete-run", "status": "partial"}
+    mock_history_store.list_runs.return_value = [SAMPLE_RUN, incomplete]
+    r = client.get("/history/runs")
+    runs = r.json()["runs"]
+    statuses = [run["status"] for run in runs]
+    assert "partial" not in statuses
+    assert all(s == "completed" for s in statuses)
