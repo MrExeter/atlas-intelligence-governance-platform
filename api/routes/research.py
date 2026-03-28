@@ -11,6 +11,8 @@ from api.schemas.research import ResearchRequest, ResearchResponse
 from auth.token_validator import validate_token
 from governance.pipeline import GovernancePipeline
 from governance.trace_builder import build_execution_trace
+from history.clustering import cluster_evidence
+from history.evidence import normalize_sources
 from history.factory import get_history_store
 from usage import create_tracker, finish_run
 
@@ -52,6 +54,9 @@ async def run_research(req: ResearchRequest, invite_token: str = Depends(validat
     usage_metrics = finish_run(run_id)
     latency_ms = int((time.time() - start_time) * 1000)
 
+    evidence = normalize_sources(trace.sources)
+    clusters = cluster_evidence(evidence)
+
     history_store.save_run({
         "run_id": run_id,
         "timestamp": datetime.now(UTC).isoformat(),
@@ -79,6 +84,8 @@ async def run_research(req: ResearchRequest, invite_token: str = Depends(validat
             "opportunities": result.get("opportunities"),
             "risks": result.get("risks"),
         },
+        "evidence": evidence,
+        **clusters,
     })
 
     logger.info(
@@ -114,4 +121,6 @@ async def run_research(req: ResearchRequest, invite_token: str = Depends(validat
             "providers_used": usage_metrics.providers_used,
             "models_used": usage_metrics.models_used,
         },
+        **clusters,
+        "evidence": evidence,
     }

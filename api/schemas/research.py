@@ -29,3 +29,7 @@ class ResearchResponse(BaseModel):
     # keep for future extensibility
     metrics: Optional[Dict[str, Any]]
 
+    evidence: Optional[List[Dict[str, Any]]] = None
+    evidence_clusters: Optional[List[Dict[str, Any]]] = None
+    other_sources: Optional[List[Dict[str, Any]]] = None
+

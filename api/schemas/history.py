@@ -23,6 +23,9 @@ class RunSummary(BaseModel):
 class RunDetail(RunSummary):
     """Full record returned by GET /history/runs/{run_id} (detail view)."""
     result: Optional[Dict[str, Any]] = None
+    evidence: Optional[List[Dict[str, Any]]] = None
+    evidence_clusters: Optional[List[Dict[str, Any]]] = None
+    other_sources: Optional[List[Dict[str, Any]]] = None
 
 
 class RunListResponse(BaseModel):
