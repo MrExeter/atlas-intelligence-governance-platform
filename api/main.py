@@ -2,6 +2,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+import config  # loads .env or Secrets Manager before anything else runs
 from api.routes import health, history, research
 from api.middleware.logging import logging_middleware
 
