@@ -1,9 +1,24 @@
+import json
 import os
+from decimal import Decimal
 
 import boto3
-from boto3.dynamodb.conditions import Key
 
 from history.base import RunHistoryStore
+
+
+def _to_decimal(record: dict) -> dict:
+    """Convert all floats to Decimal for DynamoDB compatibility."""
+    return json.loads(json.dumps(record), parse_float=Decimal)
+
+
+def _from_decimal(record: dict) -> dict:
+    """Convert Decimal values back to float for JSON serialization."""
+    def _default(obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+    return json.loads(json.dumps(record, default=_default))
 
 
 class DynamoRunHistoryStore(RunHistoryStore):
@@ -15,27 +30,22 @@ class DynamoRunHistoryStore(RunHistoryStore):
         self._table = boto3.resource("dynamodb", region_name=region).Table(table_name)
 
     def save_run(self, record: dict) -> None:
-        item = dict(record)
-        # SK is timestamp#run_id for time-sortable queries
-        item["sk"] = f"{record['timestamp']}#{record['run_id']}"
-        item["pk"] = record["invite_token"]
-        self._table.put_item(Item=item)
+        self._table.put_item(Item=_to_decimal(record))
 
     def get_run(self, run_id: str) -> dict | None:
-        # Scan with filter — acceptable at demo scale.
-        # Add a GSI on run_id for production-scale lookups.
-        response = self._table.scan(
-            FilterExpression=boto3.dynamodb.conditions.Attr("run_id").eq(run_id),
-            Limit=1,
-        )
-        items = response.get("Items", [])
-        return items[0] if items else None
+        response = self._table.get_item(Key={"run_id": run_id})
+        item = response.get("Item")
+        return _from_decimal(item) if item else None
 
     def list_runs(self, invite_token: str, limit: int = 20) -> list[dict]:
-        response = self._table.query(
-            KeyConditionExpression=Key("pk").eq(invite_token),
-            FilterExpression=boto3.dynamodb.conditions.Attr("status").eq("completed"),
-            ScanIndexForward=False,  # newest first (descending SK)
-            Limit=limit,
+        # Table PK is run_id — scan and filter by invite_token.
+        # Acceptable at demo scale; add a GSI on invite_token for production scale.
+        response = self._table.scan(
+            FilterExpression=(
+                boto3.dynamodb.conditions.Attr("invite_token").eq(invite_token) &
+                boto3.dynamodb.conditions.Attr("status").eq("completed")
+            )
         )
-        return response.get("Items", [])
+        items = [_from_decimal(item) for item in response.get("Items", [])]
+        items.sort(key=lambda r: r.get("timestamp", ""), reverse=True)
+        return items[:limit]

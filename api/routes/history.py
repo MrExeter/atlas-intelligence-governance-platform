@@ -37,4 +37,4 @@ async def get_run(run_id: str, invite_token: str = Depends(validate_token)):
     run = history_store.get_run(run_id)
     if run is None:
         raise HTTPException(status_code=404, detail="Run not found")
-    return run
+    return _flatten(run)
